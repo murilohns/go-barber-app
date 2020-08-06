@@ -65,6 +65,7 @@ const SignUp: React.FC = () => {
           'Cadastro realizado com sucesso!',
           'Você já pode fazer login na aplicação',
         );
+
         navigation.navigate('SignIn');
       } catch (err) {
         if (err instanceof Yup.ValidationError) {

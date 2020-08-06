@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-community/async-storage';
+
 import api from '../services/api';
 
 interface AuthState {
@@ -18,6 +19,7 @@ interface SignInCredentials {
 }
 interface AuthContextData {
   user: object;
+  loading: boolean;
   signIn(credentials: SignInCredentials): Promise<void>;
   signOut(): void;
 }
@@ -26,20 +28,20 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider: React.FC = ({ children }) => {
   const [data, setData] = useState<AuthState>({} as AuthState);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadStoragedData(): Promise<void> {
-      const [tokenData, userData] = await AsyncStorage.multiGet([
+      const [token, user] = await AsyncStorage.multiGet([
         '@GoBarber:token',
         '@GoBarber:user',
       ]);
 
-      const [, token] = tokenData;
-      const [, user] = userData;
-
-      if (token && user) {
-        setData({ token, user: JSON.parse(user) });
+      if (token[1] && user[1]) {
+        setData({ token: token[1], user: JSON.parse(user[1]) });
       }
+
+      setLoading(false);
     }
 
     loadStoragedData();
@@ -52,9 +54,6 @@ export const AuthProvider: React.FC = ({ children }) => {
     });
 
     const { token, user } = response.data;
-
-    await AsyncStorage.setItem('@GoBarber:token', token);
-    await AsyncStorage.setItem('@GoBarber:user', JSON.stringify(user));
 
     await AsyncStorage.multiSet([
       ['@GoBarber:token', token],
@@ -71,7 +70,7 @@ export const AuthProvider: React.FC = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user: data.user, signIn, signOut }}>
+    <AuthContext.Provider value={{ user: data.user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
